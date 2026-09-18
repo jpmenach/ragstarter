@@ -1,0 +1,22 @@
+# Normalize all text files to LF in the repo and on checkout,
+# regardless of OS or each contributor's local core.autocrlf.
+* text=auto eol=lf
+
+# Windows-native scripts genuinely need CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell scripts always LF (Windows editors handle LF fine)
+*.sh text eol=lf
+
+# Never touch binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.db binary
+*.sqlite3 binary
