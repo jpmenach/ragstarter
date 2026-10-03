@@ -1,1 +1,9 @@
 docs/notes/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Generated vector store data (rebuilt by ingest scripts, not source)
+**/storage/chroma/

@@ -1,0 +1,16 @@
+[project]
+name = "ragstarter"
+version = "0.1.0"
+description = "Reusable local-first RAG engine, demoed with a veterinary clinic WhatsApp bot"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb>=1.5.9",
+    "llama-index-core>=0.14.24",
+    "llama-index-embeddings-huggingface>=0.8.0",
+    "llama-index-vector-stores-chroma>=0.6.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.16,<0.13.0"]
+build-backend = "uv_build"
