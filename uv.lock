@@ -1174,6 +1174,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-llms-ollama"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "ollama" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/11/99/b82667831e75aca2f49488b2904520180c19cba3c24fc55ee4b177d77888/llama_index_llms_ollama-0.11.0.tar.gz", hash = "sha256:e6b8cac200a9ff67caea531fece0a6272a89e3506b2b9648ec709acffe4a7980", size = 9131, upload-time = "2026-08-31T15:57:16.454Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/9c/bf68e265e52ce76df8511b8052f97975d320ec4703ae0f4e2c19c0e99a25/llama_index_llms_ollama-0.11.0-py3-none-any.whl", hash = "sha256:835d552625082a79a4dc17e4a2c5e9bf70de26c7f679db7b3bf427dd593e5247", size = 8801, upload-time = "2026-08-31T15:57:15.664Z" },
+]
+
+[[package]]
 name = "llama-index-vector-stores-chroma"
 version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1846,6 +1859,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0b/5f/19930f824ffeb0ad4372da4812c50edbd1434f678c90c2733e1188edfc63/oauthlib-3.3.1.tar.gz", hash = "sha256:0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9", size = 185918, upload-time = "2025-06-19T22:48:08.269Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/be/9c/92789c596b8df838baa98fa71844d84283302f7604ed565dafe5a6b5041a/oauthlib-3.3.1-py3-none-any.whl", hash = "sha256:88119c938d2b8fb88561af5f6ee0eec8cc8d552b7bb1f712743136eb7523b7a1", size = 160065, upload-time = "2025-06-19T22:48:06.508Z" },
+]
+
+[[package]]
+name = "ollama"
+version = "0.6.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/97/eeafe65594e4f4b25e443e068ef7d83aa3105b023e12e1c408c38669fc07/ollama-0.6.3.tar.gz", hash = "sha256:41fc49a8095c4a75939c4c1f8582e4d0671692fb6eac2a5a7ede8c9872b67096", size = 56868, upload-time = "2026-09-29T01:26:51.906Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/64/87505d9e006461233c21c8e66dc1ecee49c996090584b216abd0dd4a8322/ollama-0.6.3-py3-none-any.whl", hash = "sha256:6a20bc42c1a5f889295d7ec490d35e5132fc31f339561530f43a8abd4dbfe508", size = 16603, upload-time = "2026-09-29T01:26:50.451Z" },
 ]
 
 [[package]]
@@ -2588,6 +2614,7 @@ dependencies = [
     { name = "chromadb" },
     { name = "llama-index-core" },
     { name = "llama-index-embeddings-huggingface" },
+    { name = "llama-index-llms-ollama" },
     { name = "llama-index-vector-stores-chroma" },
 ]
 
@@ -2596,6 +2623,7 @@ requires-dist = [
     { name = "chromadb", specifier = ">=1.5.9" },
     { name = "llama-index-core", specifier = ">=0.14.24" },
     { name = "llama-index-embeddings-huggingface", specifier = ">=0.8.0" },
+    { name = "llama-index-llms-ollama", specifier = ">=0.11.0" },
     { name = "llama-index-vector-stores-chroma", specifier = ">=0.6.0" },
 ]
 
