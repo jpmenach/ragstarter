@@ -8,6 +8,7 @@ to turn a directory of documents into a queryable vector index.
 from pathlib import Path
 
 import chromadb
+from chromadb.errors import NotFoundError
 from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
 from llama_index.core.node_parser import MarkdownNodeParser, SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -25,7 +26,11 @@ def build_index(
     persist_dir: Path,
     config: IngestConfig | None = None,
 ) -> VectorStoreIndex:
-    """Read every document under `data_dir`, chunk + embed it, and persist to Chroma."""
+    """Read every document under `data_dir`, chunk + embed it, and persist to Chroma.
+
+    Rebuilds the collection from scratch, so the index always mirrors the current
+    contents of `data_dir`.
+    """
     config = config or IngestConfig()
 
     documents = SimpleDirectoryReader(input_dir=str(data_dir)).load_data()
@@ -43,7 +48,13 @@ def build_index(
     ]
 
     chroma_client = chromadb.PersistentClient(path=str(persist_dir))
-    collection = chroma_client.get_or_create_collection(config.collection_name)
+    # Inserting into an existing collection appends: every re-ingest would duplicate all
+    # chunks, and chunks from edited or deleted documents would never go away.
+    try:
+        chroma_client.delete_collection(config.collection_name)
+    except NotFoundError:
+        pass
+    collection = chroma_client.create_collection(config.collection_name)
     vector_store = ChromaVectorStore(chroma_collection=collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
