@@ -10,8 +10,8 @@ mascotas pequeñas (conejos, hámsters, aves y reptiles de compañía).
 
 - Lunes a viernes: 8:00 a.m. a 7:00 p.m.
 - Sábados: 9:00 a.m. a 3:00 p.m.
-- Domingos y festivos: cerrado para consultas programadas, pero contamos
-  con línea de emergencias 24/7 (ver sección de Emergencias).
+- Domingos y festivos: la clínica permanece cerrada. Para emergencias, usa
+  la línea de emergencias 24/7 (ver sección de Emergencias).
 
 No es necesario agendar cita para consultas de urgencia leve, pero
 recomendamos siempre llamar antes para confirmar disponibilidad del
