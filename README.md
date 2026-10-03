@@ -85,10 +85,13 @@ Then, from the repository root:
 uv sync
 uv run python examples/veterinaria-demo/scripts/ingest.py      # build the vector index
 uv run python examples/veterinaria-demo/scripts/ask.py "¿Atienden los domingos?"
+uv run python examples/veterinaria-demo/scripts/chat.py        # web chat at http://localhost:7860
 uv run python examples/veterinaria-demo/scripts/query_test.py  # run the evaluation
 ```
 
-`ask.py --sources` also prints the retrieved chunks and their similarity scores. Re-run
+`ask.py --sources` and the web chat also show the retrieved chunks and their similarity
+scores. The web chat (Gradio) is a testing tool; it shows the conversation, but each message
+is still answered on its own. Re-run
 `ingest.py` after editing anything in `data/`; it rebuilds the index from scratch.
 
 The first ingestion downloads the bge-m3 embedding model (about 2.3 GB).
@@ -162,5 +165,6 @@ examples/veterinaria-demo/
     clinic.py     paths, persona, and hand-off message for the clinic
     ingest.py     build the index
     ask.py        ask one question
+    chat.py       web chat for manual testing (Gradio)
     query_test.py evaluation (answer vs. hand-off, plus key facts)
 ```
