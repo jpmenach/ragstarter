@@ -60,9 +60,9 @@ en la consulta.
 | Vacuna sencilla (por dosis) | $18 USD |
 | Esquema completo de cachorro/gatito (3 dosis) | $48 USD |
 | Desparasitación | $15 USD |
-| Esterilización (perro macho, hasta 15 kg) | $90 USD |
-| Esterilización (perra hembra, hasta 15 kg) | $130 USD |
-| Esterilización (gato/gata) | $70 USD |
+| Esterilización de perro (hasta 15 kg) | $90 USD |
+| Esterilización de perra (hasta 15 kg) | $130 USD |
+| Esterilización de gato o gata | $70 USD |
 | Limpieza dental con anestesia | $110 USD |
 | Hemograma completo | $30 USD |
 | Radiografía (por placa) | $35 USD |
