@@ -3,13 +3,9 @@
 Run from the repo root with: uv run python examples/veterinaria-demo/scripts/ingest.py
 """
 
-from pathlib import Path
-
 from ragstarter.core.ingest import build_index
 
-DEMO_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = DEMO_DIR / "data"
-STORAGE_DIR = DEMO_DIR / "storage" / "chroma"
+from clinic import DATA_DIR, STORAGE_DIR
 
 
 def main() -> None:

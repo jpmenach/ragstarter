@@ -10,9 +10,18 @@ from dataclasses import dataclass
 from llama_index.core import VectorStoreIndex
 from llama_index.core.llms import LLM, ChatMessage
 
-GROUNDING_RULES = """\
+from ragstarter.core.config import QueryConfig
+
+# Refusals in free text come in endless phrasings ("No tengo esa información", "Lo siento,
+# no tengo información sobre..."), which code can't detect reliably. A fixed sentinel can.
+NO_ANSWER = "NO_ANSWER"
+
+GROUNDING_RULES = f"""\
 Answer the user's question using only the information in the provided context.
-If the context does not contain the answer, say that you don't have that information.
+If the context does not explicitly answer the question, reply with exactly {NO_ANSWER} \
+and nothing else.
+If the context does not mention a service, product, or fact, that means it is unknown, \
+not that the answer is "no": reply {NO_ANSWER}.
 Do not guess and do not use outside knowledge. Be concise."""
 
 # When the context is mostly one language (e.g. a Spanish FAQ), small models drift into
@@ -33,10 +42,11 @@ class RetrievedChunk:
 
 @dataclass(frozen=True)
 class Answer:
+    # Empty when not grounded.
     text: str
     sources: list[RetrievedChunk]
-    # Whether retrieval was relevant enough to answer from. Callers decide what to do
-    # when it isn't (e.g. hand off to a human).
+    # Whether the documents could answer the question. Callers decide what to do when
+    # they couldn't (e.g. hand off to a human).
     grounded: bool
 
 
@@ -45,17 +55,26 @@ def answer(
     index: VectorStoreIndex,
     llm: LLM,
     persona: str = "",
-    top_k: int = 3,
+    config: QueryConfig | None = None,
 ) -> Answer:
-    retrieved = index.as_retriever(similarity_top_k=top_k).retrieve(question)
+    config = config or QueryConfig()
+
+    retrieved = index.as_retriever(similarity_top_k=config.top_k).retrieve(question)
     # LlamaIndex types the score as optional; vector retrieval always sets it.
     sources = [RetrievedChunk(text=r.get_content(), score=r.score or 0.0) for r in retrieved]
 
-    # Placeholder until a relevance threshold is chosen from measured retrieval scores.
-    grounded = True
+    # Cheap first check: nothing in the documents is even about this topic.
+    if not sources or max(chunk.score for chunk in sources) < config.min_score:
+        return Answer(text="", sources=sources, grounded=False)
 
+    # Second check, by the LLM: the topic matches, but the context may still not contain
+    # the answer. Similarity scores can't tell those apart; reading the context can.
     response = llm.chat(_build_messages(question, sources, persona))
-    return Answer(text=response.message.content.strip(), sources=sources, grounded=grounded)
+    text = response.message.content.strip()
+    if NO_ANSWER in text:
+        return Answer(text="", sources=sources, grounded=False)
+
+    return Answer(text=text, sources=sources, grounded=True)
 
 
 def _build_messages(
