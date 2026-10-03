@@ -12,8 +12,8 @@ Spanish, and the assistant answers questions asked in either Spanish or English.
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Ingestion, retrieval, and grounded answer generation with a local LLM | Done |
-| 2 | Detect low-relevance retrieval and escalate to a human instead of answering | Next |
-| 3 | Appointment booking via function calling (Google Calendar), in the demo | Planned |
+| 2 | Detect questions the documents can't answer and hand off to a human instead | Done |
+| 3 | Appointment booking via function calling (Google Calendar), in the demo | Next |
 | 4 | WhatsApp integration for the demo | Planned |
 | 5 | Source citations, conversation memory, usage analytics | Optional |
 
@@ -23,7 +23,13 @@ Spanish, and the assistant answers questions asked in either Spanish or English.
 Ingestion:  documents ─► split by markdown headers ─► token-bounded chunks ─► bge-m3 embeddings ─► Chroma
 
 Query:      question ─► retrieve top-k chunks ─► grounded prompt ─► local LLM (Ollama) ─► answer + sources
+                                │                                         │
+                        top score too low?                       replied NO_ANSWER?
+                                └──────────────► not grounded ◄───────────┘
 ```
+
+When the engine returns "not grounded", the demo hands the conversation off to clinic staff
+instead of answering.
 
 The code is split in two:
 
@@ -49,7 +55,14 @@ The rule for where new code goes: if it would make sense for any document set, i
   headers, unrelated policies were merged into one chunk and retrieval got worse.
 - **An explicit retrieve → prompt → generate pipeline**, instead of LlamaIndex's one-call
   query engine. Keeping the steps separate means the engine can inspect retrieval quality
-  and decide *not* to call the LLM, which Phase 2 relies on.
+  and decide *not* to call the LLM at all.
+- **Two checks before trusting an answer.** Similarity scores measure "same topic", not
+  "contains the answer": a question about adopting a cat scored 0.45 against the FAQ, higher
+  than a question the FAQ does answer (0.37). So a score threshold (0.30) only filters
+  clearly off-topic questions, without spending an LLM call on them. Questions that are on
+  topic but unanswered are caught by the LLM itself, which is told to reply with a fixed
+  `NO_ANSWER` sentinel (easy for code to detect, unlike free-text refusals) and to treat
+  "not mentioned" as unknown rather than "no".
 - **The engine depends on LlamaIndex's abstract `LLM` type**, built from config by a single
   factory function. Swapping the local model for a hosted API is a config change, not a
   change to the query pipeline.
@@ -71,8 +84,12 @@ Then, from the repository root:
 ```bash
 uv sync
 uv run python examples/veterinaria-demo/scripts/ingest.py      # build the vector index
-uv run python examples/veterinaria-demo/scripts/query_test.py  # ask the test questions
+uv run python examples/veterinaria-demo/scripts/ask.py "¿Atienden los domingos?"
+uv run python examples/veterinaria-demo/scripts/query_test.py  # run the evaluation
 ```
+
+`ask.py --sources` also prints the retrieved chunks and their similarity scores. Re-run
+`ingest.py` after editing anything in `data/`; it rebuilds the index from scratch.
 
 The first ingestion downloads the bge-m3 embedding model (about 2.3 GB).
 
@@ -82,44 +99,68 @@ Tested on a laptop with 8 GB of RAM available to WSL2 and an RTX 3050 Ti (4 GB V
 
 ## Sample output
 
-From `query_test.py`, with the scores of the retrieved chunks shown under each answer:
+Real runs of `ask.py`:
 
 ```
-=== ¿Cuánto cuesta esterilizar a mi gata?  (4.4s)
-La esterilización de una gata cuesta $130 USD.
-  [0.540] ## Precios de referencia  Los siguientes precios son de referencia y pueden...
+$ ask.py "¿Cuánto cuesta castrar a mi gato?"
+La esterilización de gato o gata cuesta $70 USD.
 
-=== How much notice do you need to cancel an appointment?  (6.0s)
-You need to give at least 4 hours of notice to cancel or reprogram an appointment.
-  [0.544] ### Citas y cancelaciones  Las citas se pueden agendar por teléfono, correo...
+$ ask.py "¿Atienden los domingos?"
+No, la clínica permanece cerrada los domingos.
 
-=== ¿Qué debo hacer si mi mascota tiene una emergencia de madrugada?  (10.8s)
-Si tu mascota tiene una emergencia de madrugada, llama a la línea de emergencias al
-+57 300 123 4567 (opción 2). El equipo estará disponible para ayudarte 24 horas al día,
-los 7 días de la semana.
-  [0.472] ## Emergencias  Contamos con línea de emergencias disponible 24 horas, los 7 días...
+$ ask.py "What does a general consultation cost?"
+A general consultation costs $25 USD.
+
+$ ask.py "Do you do home visits?"          # not in the FAQ: handed off, not guessed
+No tengo esa información, pero un miembro de nuestro equipo te responderá pronto.
+Si es una emergencia, llama al +57 300 123 4567 (opción 2).
 ```
+
+## Evaluation
+
+`query_test.py` runs 23 questions in three groups: answerable from the FAQ, on topic but not
+in the FAQ, and off topic. A case passes only if the bot makes the right call (answer vs.
+hand off) and, when it answers, the answer contains the key facts from the FAQ, e.g. the
+right price. Expected facts are regexes, so they accept Spanish or English answers.
+
+Checking facts rather than eyeballing answers mattered: a wrong sterilization price ($130
+for a cat, read from the female-dog row of the price table) looked plausible and went
+unnoticed until the test checked it.
+
+Current result with `llama3.1:8b`: **19–21 of 23** across runs. All near-miss and
+off-topic questions are handed off correctly; the failures are answer-quality issues listed
+below. The LLM isn't fully deterministic, so run it more than once before trusting a result.
 
 ## Known limitations
 
-- **Answer language with a small local model.** When the retrieved context is entirely
-  Spanish, `llama3.1:8b` sometimes answers an English question in Spanish, especially when a
-  FAQ sentence already reads like a finished answer. The current prompt gets 3 of 4 English
-  test questions answered in English; a plain "answer in the question's language"
-  instruction got 0 of 4.
-- **No relevance threshold yet.** The top chunks always go to the LLM, even for an
-  off-topic question; only the prompt's instructions keep the model from answering beyond
-  the context. Phase 2 adds a check that stops before generation instead.
+All with the local `llama3.1:8b`; comparing against a larger hosted model is planned.
+
+- **Yes/no answers that contradict their own facts.** "¿Abren los festivos?" sometimes gets
+  "Sí, la clínica permanece cerrada los festivos": the facts are right, the "Sí" is not.
+- **Misreading tables across languages.** "How much is it to spay my female cat?" gets the
+  female-dog price ($130) instead of the cat price ($70). The Spanish question is usually
+  answered correctly.
+- **Answer language.** With an all-Spanish context, English questions are sometimes answered
+  in Spanish. A plain "answer in the question's language" instruction got 0 of 4 English
+  answers; the current wording, which names the conflict with the context, gets 3 of 4.
+- **Source wording matters.** Two misreadings were fixed by rewording the FAQ, not the code:
+  "cerrado para consultas programadas, pero contamos con..." was read as *open*, and a price
+  row labeled "perra hembra" was matched to "gata". Documents fed to a small model work best
+  with one fact per sentence.
 
 ## Project layout
 
 ```
 src/ragstarter/core/
-  config.py       ingestion and LLM settings
+  config.py       ingestion, LLM, and query settings
   ingest.py       load documents, chunk, embed, persist to Chroma
   llm.py          build the configured LLM backend
-  query.py        retrieve, build the grounded prompt, generate an answer
+  query.py        retrieve, check relevance, generate a grounded answer
 examples/veterinaria-demo/
   data/faq.md     the clinic's FAQ (Spanish)
-  scripts/        ingest.py, query_test.py
+  scripts/
+    clinic.py     paths, persona, and hand-off message for the clinic
+    ingest.py     build the index
+    ask.py        ask one question
+    query_test.py evaluation (answer vs. hand-off, plus key facts)
 ```
