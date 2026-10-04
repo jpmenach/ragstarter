@@ -2,14 +2,15 @@
 
 Business-specific code (which documents to load, how retrieval results get used) stays
 in the calling vertical (e.g. examples/veterinaria-demo/) — this module only knows how
-to turn a directory of documents into a queryable vector index.
+to turn documents (a directory of files, or documents built in memory) into a queryable
+vector index.
 """
 
 from pathlib import Path
 
 import chromadb
 from chromadb.errors import NotFoundError
-from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
+from llama_index.core import Document, SimpleDirectoryReader, StorageContext, VectorStoreIndex
 from llama_index.core.node_parser import MarkdownNodeParser, SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
@@ -31,9 +32,26 @@ def build_index(
     Rebuilds the collection from scratch, so the index always mirrors the current
     contents of `data_dir`.
     """
-    config = config or IngestConfig()
-
     documents = SimpleDirectoryReader(input_dir=str(data_dir)).load_data()
+    return build_index_from_documents(documents, persist_dir, config)
+
+
+def build_index_from_documents(
+    documents: list[Document],
+    persist_dir: Path,
+    config: IngestConfig | None = None,
+) -> VectorStoreIndex:
+    """Chunk + embed documents the caller built (e.g. from database records) into Chroma.
+
+    Each document's metadata is copied to its chunks and comes back in
+    `RetrievedChunk.metadata`, so callers can attach their own fields (a record ID, a
+    page route) and trace answers back to them. LlamaIndex also embeds metadata along with
+    the text unless a key is listed in the document's `excluded_embed_metadata_keys`:
+    exclude fields that are labels (IDs, routes), keep ones that describe the content.
+
+    Rebuilds the collection from scratch, like `build_index`.
+    """
+    config = config or IngestConfig()
 
     # Split along markdown headers first so one topic doesn't bleed into the next (plain-text
     # or other formats with no headers just pass through as a single node here); then
