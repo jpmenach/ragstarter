@@ -5,7 +5,8 @@ can stop between retrieval and generation — e.g. to skip the LLM entirely when
 relevant was retrieved.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from llama_index.core import VectorStoreIndex
 from llama_index.core.llms import LLM, ChatMessage
@@ -38,6 +39,10 @@ LANGUAGE_RULE = (
 class RetrievedChunk:
     text: str
     score: float
+    # What was attached to the chunk's document when it was indexed: the file path and
+    # parent headings for a directory, or the caller's own fields (a record ID, a page
+    # route). Lets callers trace an answer back to where it came from.
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -61,7 +66,10 @@ def answer(
 
     retrieved = index.as_retriever(similarity_top_k=config.top_k).retrieve(question)
     # LlamaIndex types the score as optional; vector retrieval always sets it.
-    sources = [RetrievedChunk(text=r.get_content(), score=r.score or 0.0) for r in retrieved]
+    sources = [
+        RetrievedChunk(text=r.get_content(), score=r.score or 0.0, metadata=r.metadata)
+        for r in retrieved
+    ]
 
     # Cheap first check: nothing in the documents is even about this topic.
     if not sources or max(chunk.score for chunk in sources) < config.min_score:
