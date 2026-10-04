@@ -168,3 +168,7 @@ examples/veterinaria-demo/
     chat.py       web chat for manual testing (Gradio)
     query_test.py evaluation (answer vs. hand-off, plus key facts)
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
