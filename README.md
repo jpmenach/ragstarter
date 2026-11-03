@@ -7,15 +7,24 @@ specific to one use case lives in a separate example built on top of it.
 The included demo is a FAQ assistant for a fictional veterinary clinic. The FAQ is in
 Spanish, and the assistant answers questions asked in either Spanish or English.
 
+It's also used as a library: [ragnavigator](https://github.com/jpmenach/ragnavigator)
+indexes a catalog from a database with it, and keeps the index in sync as records are
+edited.
+
 ## Status
 
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Ingestion, retrieval, and grounded answer generation with a local LLM | Done |
 | 2 | Detect questions the documents can't answer and hand off to a human instead | Done |
-| 3 | Appointment booking via function calling (Google Calendar), in the demo | Next |
-| 4 | WhatsApp integration for the demo | Planned |
+| 3 | Appointment booking via function calling (Google Calendar), in the demo | Paused |
+| 4 | WhatsApp integration for the demo | Paused |
 | 5 | Source citations, conversation memory, usage analytics | Optional |
+
+Phases 3 and 4 are paused on purpose. Since 0.2.0 the engine has grown from what a second
+project, ragnavigator, actually needed instead: indexing documents built in code, chunk
+metadata in results, and updating an index by document id (see
+[Using it as a library](#using-it-as-a-library)).
 
 ## How it works
 
@@ -34,15 +43,54 @@ instead of answering.
 The code is split in two:
 
 - **`src/ragstarter/core/`**: the reusable engine. It loads a directory of documents with
-  LlamaIndex's `SimpleDirectoryReader` (tested so far with Markdown), chunks and embeds them,
-  retrieves relevant chunks, and generates an answer constrained to that context. It knows
-  nothing about any particular business.
+  LlamaIndex's `SimpleDirectoryReader` (tested so far with Markdown), or takes documents
+  built in code, chunks and embeds them, retrieves relevant chunks, and generates an answer
+  constrained to that context. It knows nothing about any particular business.
 - **`examples/veterinaria-demo/`**: one concrete use of the engine. It holds the clinic's FAQ,
   the assistant's persona, and (in later phases) the clinic-specific actions like booking
   appointments.
 
 The rule for where new code goes: if it would make sense for any document set, it belongs in
 `core`; if it only makes sense for a vet clinic, it belongs in the example.
+
+## Using it as a library
+
+```bash
+uv add git+https://github.com/jpmenach/ragstarter --tag v0.3.0
+```
+
+```python
+from pathlib import Path
+
+from llama_index.core import Document
+from ragstarter.core.ingest import build_index_from_documents, replace_documents
+from ragstarter.core.llm import build_llm
+from ragstarter.core.query import answer
+
+# Documents built in code (from database records, say), each with a stable id and your
+# own metadata. Labels like a route are kept out of the embedding.
+hours = Document(
+    id_="faq/hours",
+    text="# Horario\nAtendemos de lunes a viernes de 8:00 a 18:00.",
+    metadata={"route": "/faq#hours"},
+    excluded_embed_metadata_keys=["route"],
+)
+index = build_index_from_documents([hours], Path("storage/chroma"))
+llm = build_llm()  # Ollama, llama3.1:8b by default
+
+result = answer("¿Abren los sábados?", index, llm)
+if result.grounded:
+    print(result.text, result.sources[0].metadata["route"])  # "No." /faq#hours
+else:
+    ...  # the documents don't answer it: hand off instead of guessing
+
+# One record changed: re-embed just its document, by id, instead of rebuilding.
+hours.set_content("# Horario\nAtendemos de lunes a sábado de 8:00 a 18:00.")
+replace_documents(index, [hours])
+```
+
+`build_index(data_dir, persist_dir)` does the same from a folder of files, `load_index`
+reopens a built index, and `delete_documents(index, ids)` removes documents by id.
 
 ## Design decisions
 
@@ -116,7 +164,7 @@ A general consultation costs $25 USD.
 
 $ ask.py "Do you do home visits?"          # not in the FAQ: handed off, not guessed
 No tengo esa información, pero un miembro de nuestro equipo te responderá pronto.
-Si es una emergencia, llama al +57 300 123 4567 (opción 2).
+Si es una emergencia, llama al +57 000 123 4567 (opción 2).
 ```
 
 ## Evaluation
@@ -136,7 +184,8 @@ below. The LLM isn't fully deterministic, so run it more than once before trusti
 
 ## Known limitations
 
-All with the local `llama3.1:8b`; comparing against a larger hosted model is planned.
+All with the local `llama3.1:8b`; a comparison against a larger hosted model hasn't been
+done yet.
 
 - **Yes/no answers that contradict their own facts.** "¿Abren los festivos?" sometimes gets
   "Sí, la clínica permanece cerrada los festivos": the facts are right, the "Sí" is not.
@@ -156,7 +205,7 @@ All with the local `llama3.1:8b`; comparing against a larger hosted model is pla
 ```
 src/ragstarter/core/
   config.py       ingestion, LLM, and query settings
-  ingest.py       load documents, chunk, embed, persist to Chroma
+  ingest.py       load documents, chunk, embed, persist to Chroma; update by document id
   llm.py          build the configured LLM backend
   query.py        retrieve, check relevance, generate a grounded answer
 examples/veterinaria-demo/

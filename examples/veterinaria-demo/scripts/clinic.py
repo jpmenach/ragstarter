@@ -15,5 +15,5 @@ PERSONA = (
 # hand-off to clinic staff on WhatsApp.
 HANDOFF_MESSAGE = (
     "No tengo esa información, pero un miembro de nuestro equipo te responderá pronto. "
-    "Si es una emergencia, llama al +57 300 123 4567 (opción 2)."
+    "Si es una emergencia, llama al +57 000 123 4567 (opción 2)."
 )

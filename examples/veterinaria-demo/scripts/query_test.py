@@ -38,7 +38,7 @@ ANSWERABLE = [
     Case("What does a general consultation cost?", True, (r"\$\s?25\b",)),
     # The FAQ gives two valid answers: call the emergency line, or come to the clinic.
     Case("¿Qué debo hacer si mi mascota tiene una emergencia de madrugada?", True,
-         (r"300 123 4567|directamente|directly",)),
+         (r"000 123 4567|directamente|directly",)),
     Case("Do you offer overnight boarding for healthy pets?", True, (r"\bno\b",)),
     Case("¿Cuánto cuesta esterilizar a mi gata?", True, (r"\$\s?70\b",)),
     Case("How much is it to spay my female cat?", True, (r"\$\s?70\b",)),

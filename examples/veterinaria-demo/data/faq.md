@@ -21,7 +21,7 @@ en dermatología o cardiología).
 ### Contacto y ubicación
 
 - **Dirección:** Calle 45 #23-10, Local 2, Barrio El Poblado.
-- **Teléfono de recepción:** +57 300 123 4567.
+- **Teléfono de recepción:** +57 000 123 4567.
 - **Correo electrónico:** contacto@huellasfelices.example
 
 ## Servicios que ofrecemos
@@ -121,7 +121,7 @@ seguimiento esté al día.
 ## Emergencias
 
 Contamos con línea de emergencias disponible 24 horas, los 7 días de la
-semana, incluyendo festivos: **+57 300 123 4567 (opción 2)**.
+semana, incluyendo festivos: **+57 000 123 4567 (opción 2)**.
 
 Se consideran emergencias, entre otras: dificultad respiratoria,
 sangrado abundante, convulsiones, intoxicación o ingestión de sustancias
